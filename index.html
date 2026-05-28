@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ar" dir="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرر النصوص الاحترافي</title>
+    
+    <!-- استدعاء خطوط احترافية تدعم اللغات -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- استدعاء مكتبة Quill الأساسية -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --text: #1F2937;
+            --border: #E5E7EB;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Cairo', 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1000px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-header h1 {
+            font-size: 1.2rem;
+        }
+
+        .action-buttons button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .action-buttons button:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* تخصيص شريط أدوات Quill */
+        #toolbar-container {
+            border: none !important;
+            border-bottom: 2px solid var(--border) !important;
+            background: #FAFAFA;
+        }
+
+        .ql-snow .ql-picker-label {
+            font-family: 'Cairo', 'Inter', sans-serif;
+        }
+
+        /* تخصيص مساحة الكتابة */
+        #editor-container {
+            height: 60vh;
+            font-size: 16px;
+            line-height: 1.8;
+            border: none !important;
+        }
+
+        /* دعم RTL للنص */
+        .ql-editor {
+            direction: auto;
+            text-align: start;
+        }
+
+        .app-footer {
+            background: #FAFAFA;
+            padding: 10px 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #6B7280;
+        }
+
+        /* جعل المحرر متجاوب */
+        @media (max-width: 600px) {
+            #editor-container { height: 50vh; }
+            .app-header h1 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- الهيدر مع أزرار التصدير -->
+        <header class="app-header">
+            <h1>📝 محرر النصوص الاحترافي</h1>
+            <div class="action-buttons">
+                <button onclick="exportHTML()">تصدير HTML</button>
+                <button onclick="exportText()">تصدير نص عادي</button>
+                <button onclick="clearEditor()">مسح الكل</button>
+            </div>
+        </header>
+
+        <!-- شريط الأدوات المخصص -->
+        <div id="toolbar-container">
+            <span class="ql-formats">
+                <select class="ql-font"></select>
+                <select class="ql-size"></select>
+            </span>
+            <span class="ql-formats">
+                <button class="ql-bold"></button>
+                <button class="ql-italic"></button>
+                <button class="ql-underline"></button>
+                <button class="ql-strike"></button>
+            </span>
+            <span class="ql-formats">
+                <select class="ql-color"></select>
+                <select class="ql-background"></select>
+            </span>
+            <span class="ql-formats">
+                <button class="ql-list" value="ordered"></button>
+                <button class="ql-list" value="bullet"></button>
+                <button class="ql-indent" value="-1"></button>
+                <button class="ql-indent" value="+1"></button>
+            </span>
+            <span class="ql-formats">
+                <select class="ql-align"></select>
+            </span>
+            <span class="ql-formats">
+                <button class="ql-blockquote"></button>
+                <button class="ql-code-block"></button>
+                <button class="ql-link"></button>
+                <button class="ql-image"></button>
+                <button class="ql-video"></button>
+            </span>
+            <span class="ql-formats">
+                <button class="ql-clean"></button>
+            </span>
+        </div>
+
+        <!-- مساحة الكتابة -->
+        <div id="editor-container"></div>
+
+        <!-- الفوتر مع الإحصائيات -->
+        <footer class="app-footer">
+            <div id="lang-indicator">🔤 اللغة: تلقائي (RTL/LTR)</div>
+            <div id="word-count">الكلمات: 0 | الحروف: 0</div>
+        </footer>
+    </div>
+
+    <script>
+        // تهيئة محرر Quill
+        var quill = new Quill('#editor-container', {
+            modules: {
+                toolbar: '#toolbar-container'
+            },
+            placeholder: 'ابدأ الكتابة هنا... يدعم العربية والإنجليزية وجميع اللغات العالمية',
+            theme: 'snow'
+        });
+
+        // تحديث عداد الكلمات والحروف
+        function updateWordCount() {
+            var text = quill.getText().trim();
+            var charCount = text.length;
+            
+            // احتساب الكلمات (يعمل مع اللغات المتصلة والمنفصلة)
+            var wordCount = 0;
+            if (text.length > 0) {
+                wordCount = text.replace(/\s+/g, ' ').split(' ').length;
+            }
+
+            document.getElementById('word-count').innerText = `الكلمات: ${wordCount} | الحروف: ${charCount}`;
+        }
+
+        // مراقبة التغييرات في المحرر
+        quill.on('text-change', function(delta, oldDelta, source) {
+            updateWordCount();
+        });
+
+        // تصدير كملف HTML
+        function exportHTML() {
+            var html = quill.root.innerHTML;
+            downloadFile(html, 'document.html', 'text/html');
+        }
+
+        // تصدير كملف نصي عادي
+        function exportText() {
+            var text = quill.getText();
+            downloadFile(text, 'document.txt', 'text/plain');
+        }
+
+        // دالة التحميل
+        function downloadFile(data, filename, type) {
+            var file = new Blob([data], { type: type });
+            if (window.navigator.msSaveOrOpenBlob) // IE10+
+                window.navigator.msSaveOrOpenBlob(file, filename);
+            else { // Others
+                var a = document.createElement("a"),
+                        url = URL.createObjectURL(file);
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+        }
+
+        // مسح المحرر
+        function clearEditor() {
+            if(confirm('هل أنت متأكد من مسح كل النص؟')) {
+                quill.setText('');
+            }
+        }
+    </script>
+</body>
+</html>
